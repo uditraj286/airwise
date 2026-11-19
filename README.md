@@ -1,5 +1,7 @@
 # AirWise: a GenAI smog companion for families
 
+**Live demo:** https://airwise-two.vercel.app · **Code:** https://github.com/uditraj286/airwise
+
 > **PromptWars, Challenge 6.** A GenAI-powered assistant that helps families and communities get through severe winter smog and urban air pollution. It suggests **low-emission daily routines**, **indoor air-quality hacks** and **sustainable alternatives** tailored to each family's **location and lifestyle**, and it **clearly explains the direct impact of every choice**.
 
 AirWise reads **live air data for the exact place a family lives**. It blends nearby government monitoring stations (CPCB) with the Copernicus CAMS forecast, and adds live weather. It combines that with the household (children, elders, asthma, commute, stove) and a **source-cited exposure and emissions model**. **Google Gemini** then writes a plain-language plan for today and answers questions, in English or Hindi. **Firebase** keeps the household, daily progress and community pledges in sync across devices.
