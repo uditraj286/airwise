@@ -1,0 +1,71 @@
+rules_version = '2';
+
+// Shared Firebase project `stadiumos-ai`: StadiumOS rules (unchanged) + AirWise rules (airwise_* collections only).
+// Firestore ORs rules together; the final deny-all keeps every other path closed.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===== StadiumOS rules (unchanged) =====
+    match /stadium_status/{doc}    { allow read: if true;  allow write: if false; }
+    match /crowd_predictions/{doc} { allow read: if true;  allow write: if false; }
+    match /transport/{doc}         { allow read: if true;  allow write: if false; }
+    match /sustainability/{doc}    { allow read: if true;  allow write: if false; }
+    match /ai_reports/{doc}        { allow read: if true;  allow write: if false; }
+    match /notifications/{doc}     { allow read: if true;  allow write: if false; }
+    match /fan_experience/{doc}    { allow read: if true;  allow write: if false; }
+    match /food_waste/{doc}        { allow read: if true;  allow write: if false; }
+    match /emergency_alerts/{doc}  { allow read: if false; allow write: if false; }
+
+    // ===== BEGIN AirWise rules =====
+    function awSignedIn() { return request.auth != null; }
+    function awIsOwner(uid) { return awSignedIn() && request.auth.uid == uid; }
+    function awServerTime() { return request.resource.data.updatedAt == request.time; }
+    function awIsStringList(list, maxSize) { return list is list && list.size() <= maxSize; }
+
+    match /airwise_users/{uid} {
+      allow read, delete: if awIsOwner(uid);
+      allow create, update: if awIsOwner(uid)
+        && request.resource.data.keys().hasOnly(['profile', 'updatedAt'])
+        && request.resource.data.profile is map
+        && request.resource.data.profile.version == 1
+        && request.resource.data.profile.members is list
+        && request.resource.data.profile.members.size() >= 1
+        && request.resource.data.profile.members.size() <= 8
+        && request.resource.data.profile.location.name is string
+        && request.resource.data.profile.location.name.size() <= 80
+        && awServerTime();
+
+      match /days/{date} {
+        allow read, delete: if awIsOwner(uid);
+        allow create, update: if awIsOwner(uid)
+          && date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && request.resource.data.keys().hasOnly(['date', 'city', 'aqi', 'planIds', 'doneIds', 'plannedExposurePct', 'co2KgDone', 'pm25GDone', 'updatedAt'])
+          && request.resource.data.date == date
+          && request.resource.data.city is string && request.resource.data.city.size() <= 80
+          && request.resource.data.aqi is number && request.resource.data.aqi >= 0 && request.resource.data.aqi <= 1000
+          && awIsStringList(request.resource.data.planIds, 11)
+          && awIsStringList(request.resource.data.doneIds, 11)
+          && request.resource.data.plannedExposurePct is number
+          && request.resource.data.co2KgDone is number && request.resource.data.co2KgDone >= 0 && request.resource.data.co2KgDone <= 100
+          && request.resource.data.pm25GDone is number && request.resource.data.pm25GDone >= 0 && request.resource.data.pm25GDone <= 100
+          && awServerTime();
+      }
+    }
+
+    match /airwise_pledges/{uid} {
+      allow read: if awSignedIn();
+      allow delete: if awIsOwner(uid);
+      allow create, update: if awIsOwner(uid)
+        && request.resource.data.keys().hasOnly(['city', 'actions', 'co2KgWeek', 'updatedAt'])
+        && request.resource.data.city is string
+        && request.resource.data.city.size() > 0 && request.resource.data.city.size() <= 60
+        && awIsStringList(request.resource.data.actions, 11)
+        && request.resource.data.co2KgWeek is number
+        && request.resource.data.co2KgWeek >= 0 && request.resource.data.co2KgWeek <= 500
+        && awServerTime();
+    }
+    // ===== END AirWise rules =====
+
+    // ===== Deny everything else =====
+    match /{document=**} { allow read, write: if false; }
+  }
+}

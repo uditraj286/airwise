@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "airwise_pledges",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "city", "order": "ASCENDING" },
+        { "fieldPath": "co2KgWeek", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

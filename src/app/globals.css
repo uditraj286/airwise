@@ -1,0 +1,287 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens (RGB triplets) — contrast-checked for WCAG AA in both themes. */
+:root {
+  --canvas: 245 245 246;
+  --surface: 255 255 255;
+  --subtle: 247 247 248;
+  --line: 236 236 239;
+  --ink: 17 17 19;
+  --muted: 100 100 110;
+  --brand: 22 101 52;
+  --brand-strong: 20 83 45;
+  --brand-soft: 220 252 231;
+  --on-brand: 255 255 255;
+  --good: 22 116 54;
+  --warn: 180 58 10;
+  --bad: 220 38 38;
+  --amber: 202 138 4;
+  /* AQI category scale (CPCB colours, tuned for contrast on light surfaces) */
+  --aqi-good: 22 163 74;
+  --aqi-satisfactory: 101 163 13;
+  --aqi-moderate: 202 138 4;
+  --aqi-poor: 234 88 12;
+  --aqi-very-poor: 220 38 38;
+  --aqi-severe: 136 19 55;
+  /* Motion */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+  color-scheme: light;
+}
+
+.dark {
+  --canvas: 9 9 11;
+  --surface: 22 22 25;
+  --subtle: 30 30 34;
+  --line: 44 44 50;
+  --ink: 244 244 245;
+  --muted: 161 161 170;
+  --brand: 74 222 128;
+  --brand-strong: 21 128 61;
+  --brand-soft: 20 46 30;
+  --on-brand: 9 9 11;
+  --good: 74 222 128;
+  --warn: 251 146 60;
+  --bad: 248 113 113;
+  --amber: 250 204 21;
+  --aqi-good: 74 222 128;
+  --aqi-satisfactory: 163 230 53;
+  --aqi-moderate: 250 204 21;
+  --aqi-poor: 251 146 60;
+  --aqi-very-poor: 248 113 113;
+  --aqi-severe: 244 114 182;
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: rgb(var(--canvas));
+  color: rgb(var(--ink));
+}
+
+body {
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--brand));
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes bar-grow {
+  from {
+    transform: scaleY(0.04);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes bar-grow-x {
+  from {
+    transform: scaleX(0.02);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes live-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  80%,
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@keyframes pulse-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+@layer components {
+  .animate-in {
+    animation: fade-up var(--dur-slow) var(--ease-standard) both;
+  }
+  .bar-grow {
+    transform-origin: bottom;
+    animation: bar-grow 600ms var(--ease-standard) both;
+  }
+  .bar-grow-x {
+    transform-origin: left;
+    animation: bar-grow-x 700ms var(--ease-standard) both;
+  }
+  .live-dot {
+    position: relative;
+  }
+  .live-dot::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: inherit;
+    animation: live-ping 2s var(--ease-standard) infinite;
+  }
+  .skeleton {
+    @apply rounded-xl;
+    background: linear-gradient(90deg, rgb(var(--subtle)) 0%, rgb(var(--line)) 50%, rgb(var(--subtle)) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+  .text-shimmer {
+    background: linear-gradient(90deg, rgb(var(--muted)) 0%, rgb(var(--ink)) 50%, rgb(var(--muted)) 100%);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 2s linear infinite;
+  }
+  .stream-caret::after {
+    content: "";
+    display: inline-block;
+    width: 0.5em;
+    height: 1em;
+    margin-left: 2px;
+    vertical-align: -0.15em;
+    border-radius: 2px;
+    background: rgb(var(--ink));
+    animation: caret 1s steps(1) infinite;
+  }
+  .card {
+    @apply rounded-card bg-surface shadow-card;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-line bg-surface px-3 py-1 text-sm;
+  }
+}
+
+:root {
+  --canvas: 236 239 236;
+  --panel: 246 247 246;
+  --glass: 246 247 246;
+  --glass-edge: 226 230 226;
+}
+.dark {
+  --canvas: 6 8 7;
+  --panel: 15 18 16;
+  --glass: 15 18 16;
+  --glass-edge: 40 46 42;
+}
+.app-canvas {
+  background: rgb(var(--canvas));
+}
+/* Rounded grey panel that holds white cards (sidebar, top bar, main area), as in the reference. */
+.panel {
+  background: rgb(var(--panel));
+  border-radius: 28px;
+}
+/* Green gradient for the one "hero" number on a page. */
+.hero-gradient {
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgb(34 197 94 / 0.35), transparent 55%),
+    linear-gradient(135deg, rgb(21 128 61), rgb(var(--brand-strong)) 55%, rgb(14 60 33));
+  color: rgb(255 255 255);
+}
+/* Deep green feature card with soft curved lines (countdown, promo). */
+.card-dark {
+  background:
+    radial-gradient(140% 90% at 100% 100%, transparent 58%, rgb(255 255 255 / 0.06) 59%, transparent 61%),
+    radial-gradient(120% 80% at 100% 100%, transparent 62%, rgb(255 255 255 / 0.05) 63%, transparent 65%),
+    radial-gradient(100% 100% at 0% 0%, rgb(34 197 94 / 0.25), transparent 60%),
+    linear-gradient(160deg, rgb(15 61 35), rgb(6 30 17));
+  color: rgb(255 255 255);
+}
+/* Diagonal stripes for forecast or "later" values. */
+.hatch {
+  background: repeating-linear-gradient(-45deg, rgb(var(--brand) / 0.55) 0 3px, transparent 3px 8px);
+  box-shadow: inset 0 0 0 1.5px rgb(var(--brand) / 0.35);
+}
+.glass-panel {
+  background: rgb(var(--glass));
+  border-color: rgb(var(--glass-edge) / 0.7);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14);
+}
+@supports (backdrop-filter: blur(10px)) {
+  .glass-panel {
+    background: linear-gradient(120deg, rgb(var(--glass) / 0.94), rgb(var(--glass) / 0.83));
+    backdrop-filter: blur(10px);
+  }
+}
+.reading-strip {
+  background: rgb(var(--brand) / 0.045);
+  border-inline-start: 3px solid rgb(var(--brand));
+  padding: 0.85rem 1rem;
+  border-radius: 0.75rem;
+}
+@media (prefers-reduced-motion: no-preference) {
+  :where(button, a, label:has(input[type="checkbox"])) {
+    transition:
+      scale 120ms var(--ease-standard),
+      background-color 120ms ease,
+      color 120ms ease;
+  }
+  :where(button:enabled, a, label:has(input[type="checkbox"])):active {
+    scale: 0.97;
+  }
+}
+@media (hover: hover) {
+  :where(button:enabled, nav a):hover {
+    box-shadow: inset 0 0 0 1px rgb(var(--brand) / 0.18);
+  }
+}
+.card {
+  border: 1px solid rgb(var(--line));
+  box-shadow: 0 2px 6px rgb(var(--ink) / 0.035);
+}
+main :where(input, select, textarea):focus-visible {
+  outline: 2px solid rgb(var(--brand));
+  outline-offset: 2px;
+}

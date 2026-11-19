@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Type-check
+        run: npm run typecheck
+      - name: Formatting
+        run: npm run format:check
+      - name: Unit & component tests (coverage gate 80%)
+        run: npm run test:coverage
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+      - name: End-to-end + accessibility (axe) tests
+        run: npm run test:e2e
+        env:
+          CI: "1"
