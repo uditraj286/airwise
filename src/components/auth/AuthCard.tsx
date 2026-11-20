@@ -15,6 +15,7 @@ import {
   signInWithGoogle,
   signUpWithEmail,
 } from "@/lib/firebase/auth";
+import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { useCloudStatus } from "@/lib/firebase/sync";
 import { SAMPLE_PROFILE, useProfile } from "@/lib/profile/store";
 
@@ -155,6 +156,16 @@ export function AuthCard() {
           ? "Sign in to see your family's plan on any device."
           : "Save your household and progress, and pick up on any device."}
       </p>
+
+      {!isFirebaseConfigured() && (
+        <p
+          role="status"
+          className="mt-4 rounded-xl border border-line bg-subtle px-3.5 py-2.5 text-caption text-muted"
+        >
+          Accounts are switched off on this deployment, so sign-in won&apos;t work here yet. You can still use
+          everything as a guest; your household stays on this device.
+        </p>
+      )}
 
       <div className="mt-6">
         <Segmented<Mode>
