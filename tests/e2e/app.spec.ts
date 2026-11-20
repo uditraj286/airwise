@@ -93,7 +93,7 @@ test("first visit starts at the welcome page, then household setup, then the das
   await page.goto("/");
   await expect(page).toHaveURL(/\/login$/, { timeout: 20_000 });
   await page.getByRole("button", { name: "Continue as a guest" }).click();
-  await expect(page).toHaveURL(/\/setup$/);
+  await expect(page).toHaveURL(/\/setup\?new=1$/);
   await expect(page.getByText("Step 1 of 4")).toBeVisible();
 
   // Step 1 can't be skipped without a location.
@@ -237,7 +237,16 @@ test("login page validates input and lets guests continue", async ({ page }) => 
   await page.getByRole("button", { name: "Show password" }).click();
   await expect(page.getByLabel("Password", { exact: true })).toHaveAttribute("type", "text");
   await page.getByRole("button", { name: "Continue as a guest" }).click();
-  await expect(page).toHaveURL(/\/setup$/);
+  await expect(page).toHaveURL(/\/setup\?new=1$/);
+});
+
+test("a guest always starts a new household, even if one is saved on this device", async ({ page }) => {
+  await open(page, "/login");
+  await page.getByRole("button", { name: "Continue as a guest" }).click();
+  await expect(page).toHaveURL(/\/setup\?new=1$/);
+  await expect(page.getByText("Step 1 of 4")).toBeVisible();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByText(/Choose your city or share your location/)).toBeVisible();
 });
 
 test("theme toggle persists and keyboard skip link works", async ({ page }) => {

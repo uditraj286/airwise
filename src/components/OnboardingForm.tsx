@@ -196,14 +196,25 @@ export function freshDraft(base: Profile, isDemo: boolean): Profile {
 
 /**
  * Household setup as a 4-step wizard. `setup` is the full-screen first-run flow after sign-up or "Continue as guest";
- * `edit` is the Household page, where every step can be opened directly.
+ * `edit` is the Household page, where every step can be opened directly. `fresh` ignores any household already
+ * on this device, so a guest is always asked for their own details.
  */
-export function OnboardingForm({ mode = "edit" }: { mode?: "setup" | "edit" }) {
+export function OnboardingForm({
+  mode = "edit",
+  fresh = false,
+}: {
+  mode?: "setup" | "edit";
+  fresh?: boolean;
+}) {
   const { profile, save, isDemo } = useProfile();
   return (
     <Wizard
-      key={JSON.stringify(profile)}
-      initial={freshDraft(profile, isDemo || profile.sample === true)}
+      key={fresh ? "fresh" : JSON.stringify(profile)}
+      initial={
+        fresh
+          ? freshDraft({ ...DEMO_PROFILE, language: profile.language }, true)
+          : freshDraft(profile, isDemo || profile.sample === true)
+      }
       save={save}
       mode={mode}
     />

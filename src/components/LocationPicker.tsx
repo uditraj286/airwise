@@ -105,7 +105,7 @@ export function LocationPicker({
         const lon = Number(pos.coords.longitude.toFixed(4));
         let name = "My location";
         try {
-          const response = await fetch(`/api/geocode?lat=${lat.toFixed(2)}&lon=${lon.toFixed(2)}`, {
+          const response = await fetch(`/api/geocode?lat=${lat.toFixed(3)}&lon=${lon.toFixed(3)}`, {
             cache: "no-store",
             signal: AbortSignal.timeout(5000),
           });

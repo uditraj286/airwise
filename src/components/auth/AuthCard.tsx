@@ -61,7 +61,7 @@ export function AuthCard() {
   const router = useRouter();
   const params = useSearchParams();
   const cloud = useCloudStatus();
-  const { isDemo, save } = useProfile();
+  const { save } = useProfile();
   const [mode, setMode] = useState<Mode>(params.get("mode") === "signup" ? "signup" : "signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -310,7 +310,7 @@ export function AuthCard() {
           Just looking?{" "}
           <button
             type="button"
-            onClick={() => router.push(isDemo ? "/setup" : "/")}
+            onClick={() => router.push("/setup?new=1")}
             className="font-medium text-ink underline-offset-2 hover:underline"
           >
             Continue as a guest

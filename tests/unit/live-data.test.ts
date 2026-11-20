@@ -67,6 +67,29 @@ describe("place names", () => {
     expect(formatPlace({ address: { town: "Delhi", state: "Delhi", country: "India" } })).toBe(
       "Delhi, India",
     );
+    // The most local name leads, then its town: a colony in Bihta reads "Sikandarpur, Bihta, Patna…".
+    expect(
+      formatPlace({
+        address: {
+          neighbourhood: "Sikandarpur",
+          village: "Bihta",
+          state_district: "Patna",
+          state: "Bihar",
+          country: "India",
+        },
+      }),
+    ).toBe("Sikandarpur, Bihta, Patna, Bihar, India");
+    expect(
+      formatPlace({
+        address: {
+          hamlet: "Amhara",
+          county: "Bihta",
+          state_district: "Patna",
+          state: "Bihar",
+          country: "India",
+        },
+      }),
+    ).toBe("Amhara, Bihta, Patna, Bihar, India");
     expect(formatPlace({ address: {} })).toBeNull();
     expect(formatPlace("nope")).toBeNull();
   });
@@ -79,6 +102,10 @@ describe("place names", () => {
     expect(await reverseGeocode(18.52, 73.86, fetchImpl as typeof fetch)).toBe("Pune, Maharashtra, India");
     expect(await reverseGeocode(18.52, 73.86, fetchImpl as typeof fetch)).toBe("Pune, Maharashtra, India");
     expect(fetchImpl).toHaveBeenCalledTimes(1);
+    // About 110 m precision, so the lookup names the right village rather than the next one over.
+    const url = String((fetchImpl.mock.calls[0] as unknown as [string])[0]);
+    expect(url).toContain("lat=18.520");
+    expect(url).toContain("zoom=16");
     const failing = vi.fn(async () => {
       throw new Error("offline");
     });

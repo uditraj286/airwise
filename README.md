@@ -60,7 +60,7 @@ AirWise reads **live air data for the exact place a family lives**. It blends ne
 | Station AQI | CPCB national feed (public relay) | All stations within 30 km, inverse-distance blended; schema-validated, 3-second timeout, see [`SECURITY.md`](SECURITY.md) |
 | Hourly PM2.5, PM10, NO₂, SO₂, CO, O₃ and the forecast | Open-Meteo (Copernicus CAMS); Google Air Quality API if a key is set | Calibrated to the stations so every card agrees ([ADR-0002](docs/adr/0002-station-blend-and-calibration.md)) |
 | Weather (wind, temperature, humidity) | Open-Meteo | Tells families why smog is trapped today |
-| Place names and search | OpenStreetMap Nominatim, Open-Meteo geocoding | Coordinates rounded to about 1 km |
+| Place names and search | OpenStreetMap Nominatim, Open-Meteo geocoding | Place-name lookup at about 110 m, search by name only |
 
 ---
 
@@ -160,7 +160,7 @@ The non-root `Dockerfile` uses the Next.js standalone output.
 
 ## Privacy
 - Accounts are optional; guests use an anonymous Firebase session, and only that user can read their data (Firestore rules).
-- The precise location stays on the device. The server, reverse geocoding and Firestore see coordinates rounded to about 1 km.
+- The precise location stays on the device. The server and Firestore see coordinates rounded to about 1 km; the place-name lookup uses about 110 m so it names the exact village or neighbourhood.
 - The station feed never receives a location: the whole national feed is downloaded and matched on the server.
 - "Delete all my data" removes everything from the device and Firestore.
 

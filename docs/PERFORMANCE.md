@@ -7,7 +7,7 @@ AirWise runs on a phone in a smoggy city, often on a slow connection, and calls 
 |---|---|---|---|
 | Server air cache | Full snapshot per location (air + weather + stations, calibrated) | 55 s fresh, stale copy kept 55 min as a fallback | `src/lib/air/service.ts` (`TtlCache`, bounded LRU) |
 | Station feed | The whole national CPCB feed, shared by every user and place | 55 s | `src/lib/air/stations.ts` |
-| Place names | Reverse-geocode result per ~1 km cell; search results per query | 24 h | `src/lib/air/place.ts`, `src/app/api/geocode/route.ts` |
+| Place names | Reverse-geocode result per ~110 m cell; search results per query | 24 h | `src/lib/air/place.ts`, `src/app/api/geocode/route.ts` |
 | Plan | Today's plan per household fingerprint (no repeat Gemini calls) | the day, background refresh hourly | `src/lib/usePlan.ts` |
 | Shared live feed | One `/api/air` poll per minute for the whole app (dashboard, alerts, share, health page) | while open | `src/lib/airContext.tsx` |
 | Saved places | One batched request (`/api/air/batch`, up to 5 places) instead of one per place | every 5 min | `src/app/api/air/batch/route.ts` |

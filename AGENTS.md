@@ -146,7 +146,7 @@ firestore.rules firestore.indexes.json firebase.json Dockerfile
 ### Data flow
 
 1. **Profile and first visit.** `useProfile()` returns the saved household from localStorage (`airwise.profile.v1`).
-   - **Household first:** `AppShell` waits for cloud sync to settle, then `setupRedirect()` sends anyone without a saved household (or without a confirmed location) to `/login` (guests) or `/setup` (signed in). `/login` → "Continue as a guest" or sign-in/up → `/setup` wizard → dashboard (`/`). "Try with a sample family" saves `SAMPLE_PROFILE` (`sample: true`) and the dashboard shows a "Set up my household" banner.
+   - **Household first:** `AppShell` waits for cloud sync to settle, then `setupRedirect()` sends anyone without a saved household (or without a confirmed location) to `/login` (guests) or `/setup` (signed in). `/login` → "Continue as a guest" (always `/setup?new=1`, a blank household like a brand-new user) or sign-in/up → `/setup` wizard → dashboard (`/`). "Try with a sample family" saves `SAMPLE_PROFILE` (`sample: true`) and the dashboard shows a "Set up my household" banner.
    - Cloud sync (`lib/firebase/sync.ts`) mirrors the profile and day log to Firestore for the anonymous or signed-in user.
 2. **Air.** `useAir(location)` calls `GET /api/air`, which runs `getAirSnapshot()`:
    - mock data, or Google if a key is set, otherwise Open-Meteo, plus weather. Google uses its returned India AQI (ind_cpcb) and Open-Meteo uses a labeled particle-based estimate;
@@ -180,7 +180,7 @@ firestore.rules firestore.indexes.json firebase.json Dockerfile
 - API routes use `enforceRateLimit` (air 60/min, AI 12/min), same-origin checks, a 16 KB body cap and content-type checks (`lib/security/http.ts`).
 - The CSP in `next.config.ts` lists exact origins. Add a new browser-side origin there, but prefer server-side fetches.
 - Firestore rules: owner-only access, field allow-lists, server timestamps, deny-all at the end.
-- Keep four-decimal air lookup coordinates in the device's profile. Round coordinates to two decimals for Firestore sync and reverse geocoding.
+- Keep four-decimal air lookup coordinates in the device's profile. Round coordinates to two decimals for Firestore sync, and to three decimals (~110 m) for the reverse place-name lookup so the exact village or neighbourhood is named, not the next one over.
 
 **Accessibility (WCAG 2.1 AA, enforced by axe in e2e)**
 - Colour never carries meaning alone: give every chart mark an accessible name and a legend in words.
