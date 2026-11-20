@@ -75,7 +75,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       // Block and district tell same-named places apart: "Raghopur, Bihta, Patna, Bihar, India".
       name: [r.name, r.admin3, r.admin2?.replace(/ district$/i, ""), r.admin1, r.country]
         .filter((p, i, all) => p && all.indexOf(p) === i)
-        .join(", "),
+        .join(", ")
+        // Plain letters ("Rāghopur, Sáran" → "Raghopur, Saran") match what families type and read.
+        .normalize("NFD")
+        .replace(/\p{M}/gu, ""),
       lat: r.latitude,
       lon: r.longitude,
     }));

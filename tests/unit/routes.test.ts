@@ -112,7 +112,7 @@ describe("GET /api/geocode", () => {
           results: [
             village("Revelganj", 25.806, 84.634),
             village("Bikram", 25.462, 84.83),
-            village("Bihta", 25.546, 84.864),
+            { ...village("Bihta", 25.546, 84.864), name: "Rāghopur" },
           ],
         }),
       ),
