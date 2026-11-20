@@ -32,7 +32,7 @@ Hackathon judging criteria the code is designed around: **Code Quality, Security
 | AI | `@google/genai`. Default model `gemini-3.5-flash-lite` (retried once on 503), then fallbacks `gemini-3.6-flash` and `gemini-3.5-flash`. |
 | Air data | Open-Meteo air quality (Copernicus CAMS model, free, no key). The Google Air Quality API is used instead when `GOOGLE_AIR_QUALITY_API_KEY` is set. |
 | Weather | Open-Meteo forecast (wind, temperature, humidity), giving a "smog trapped / slow / dispersing" verdict |
-| Place names | OpenStreetMap Nominatim reverse geocoding (server-side, cached 24 h); Open-Meteo geocoding for city search |
+| Place names | OpenStreetMap Nominatim reverse geocoding plus the nearest Overpass settlement point (server-side, cached 24 h; the nearest settlement beats oversized village boundaries, e.g. Bihta not Bikram); Open-Meteo geocoding for city search |
 | Accounts and storage | Firebase 13: Auth (anonymous guest, email/password, Google) and Firestore with persistent local cache |
 | Tests | Vitest + Testing Library (unit, 80% coverage gate); Playwright + axe-core (end-to-end, WCAG 2.1 AA in light and dark mode) |
 | Deploy | `Dockerfile` (non-root, Cloud Run ready); CI in `.github/workflows/ci.yml` |

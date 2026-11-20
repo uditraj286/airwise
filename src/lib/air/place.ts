@@ -26,35 +26,84 @@ const NominatimReverse = z.object({
 });
 
 /**
- * Turn a reverse-geocoding payload into "Area, Town, District, State, Country" (skipping repeats).
- * The most local name comes first (neighbourhood, hamlet or village), so a family in Bihta sees Bihta,
- * and a family in a city neighbourhood sees that neighbourhood, not just the city or district.
+ * Turn a reverse-geocoding payload into "Area, Town, Block, District, State, Country" (skipping repeats).
+ * The most local name comes first. `nearest` is the closest mapped settlement to the point (see
+ * `nearestSettlement`); it wins over Nominatim's village label, because village boundaries in rural India are
+ * often drawn far too large: a spot 1.6 km from Bihta is labelled "Bikram", a town 12 km away.
  */
-export function formatPlace(raw: unknown): string | null {
+export function formatPlace(raw: unknown, nearest?: string | null): string | null {
   const parsed = NominatimReverse.safeParse(raw);
   if (!parsed.success) return null;
   const a = parsed.data.address ?? {};
-  const area = a.neighbourhood ?? a.quarter ?? a.hamlet ?? a.suburb;
-  const locality = a.village ?? a.town ?? a.city_district ?? a.city ?? a.county ?? parsed.data.name;
+  const area = nearest
+    ? (a.neighbourhood ?? a.quarter)
+    : (a.neighbourhood ?? a.quarter ?? a.hamlet ?? a.suburb);
+  const locality =
+    nearest ?? a.village ?? a.town ?? a.city_district ?? a.city ?? a.county ?? parsed.data.name;
   const parent = a.city ?? a.state_district;
-  const parts = [area, locality, parent, a.state, a.country].filter((p): p is string => Boolean(p));
+  const parts = [area, locality, a.county, parent, a.state, a.country].filter((p): p is string => Boolean(p));
   const unique = parts.filter((p, i) => parts.indexOf(p) === i);
   return unique.length ? unique.join(", ") : null;
+}
+
+const OverpassPlaces = z.object({
+  elements: z.array(
+    z.object({
+      lat: z.number(),
+      lon: z.number(),
+      tags: z.object({ name: z.string().optional(), "name:en": z.string().optional() }).optional(),
+    }),
+  ),
+});
+
+/** Name of the closest town, village, suburb or hamlet point within ~3 km (OpenStreetMap Overpass), or null. */
+export async function nearestSettlement(
+  lat: number,
+  lon: number,
+  fetchImpl: typeof fetch = fetch,
+): Promise<string | null> {
+  const query = `[out:json][timeout:5];node(around:3000,${lat.toFixed(3)},${lon.toFixed(3)})[place~"^(city|town|village|suburb|hamlet)$"][name];out;`;
+  try {
+    const res = await fetchImpl("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      headers: {
+        "User-Agent": "AirWise/1.0 (air-quality assistant)",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({ data: query }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return null;
+    const parsed = OverpassPlaces.safeParse(await res.json());
+    if (!parsed.success) return null;
+    const cos = Math.cos((lat * Math.PI) / 180);
+    let best: { name: string; d: number } | null = null;
+    for (const e of parsed.data.elements) {
+      const name = e.tags?.["name:en"] ?? e.tags?.name;
+      if (!name) continue;
+      const d = Math.hypot((e.lon - lon) * cos, e.lat - lat);
+      if (!best || d < best.d) best = { name, d };
+    }
+    return best?.name ?? null;
+  } catch {
+    return null;
+  }
 }
 
 const cache = new TtlCache<string | null>(24 * 3600_000, 500);
 
 /**
  * Reverse-geocode coordinates rounded to three decimals (~110 m, enough to name the right village or
- * neighbourhood without pinpointing a home) with OpenStreetMap Nominatim (free, no key). Results are cached
- * for a day per cell, which keeps us inside the service's usage policy. Returns null on any failure.
+ * neighbourhood without pinpointing a home) with OpenStreetMap: Nominatim for the address and Overpass for the
+ * nearest settlement, in parallel (both free, no key). Results are cached for a day per cell, which keeps us
+ * inside the services' usage policies. Returns null when Nominatim fails; Overpass is best-effort.
  */
 export async function reverseGeocode(
   lat: number,
   lon: number,
   fetchImpl: typeof fetch = fetch,
 ): Promise<string | null> {
-  const key = `v3:${lat.toFixed(3)},${lon.toFixed(3)}`;
+  const key = `v4:${lat.toFixed(3)},${lon.toFixed(3)}`;
   const hit = cache.get(key);
   if (hit !== undefined) return hit;
   try {
@@ -65,12 +114,15 @@ export async function reverseGeocode(
       zoom: "16",
       "accept-language": "en",
     });
-    const res = await fetchImpl(`https://nominatim.openstreetmap.org/reverse?${params}`, {
-      headers: { "User-Agent": "AirWise/1.0 (air-quality assistant)" },
-      signal: AbortSignal.timeout(4000),
-    });
+    const [res, nearest] = await Promise.all([
+      fetchImpl(`https://nominatim.openstreetmap.org/reverse?${params}`, {
+        headers: { "User-Agent": "AirWise/1.0 (air-quality assistant)" },
+        signal: AbortSignal.timeout(4000),
+      }),
+      nearestSettlement(lat, lon, fetchImpl),
+    ]);
     if (!res.ok) return null;
-    const name = formatPlace(await res.json());
+    const name = formatPlace(await res.json(), nearest);
     cache.set(key, name);
     return name;
   } catch {

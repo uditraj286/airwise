@@ -1,4 +1,4 @@
-import { formatPlace, isGenericPlaceName, reverseGeocode } from "@/lib/air/place";
+import { formatPlace, isGenericPlaceName, nearestSettlement, reverseGeocode } from "@/lib/air/place";
 import { pollutantReadings, timesLabel, WHO_LIMIT } from "@/lib/air/pollutants";
 import { getAirSnapshot } from "@/lib/air/service";
 import type { AirSnapshot } from "@/lib/types";
@@ -101,9 +101,12 @@ describe("place names", () => {
     );
     expect(await reverseGeocode(18.52, 73.86, fetchImpl as typeof fetch)).toBe("Pune, Maharashtra, India");
     expect(await reverseGeocode(18.52, 73.86, fetchImpl as typeof fetch)).toBe("Pune, Maharashtra, India");
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    // One Nominatim call and one Overpass call, then the cache answers.
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
     // About 110 m precision, so the lookup names the right village rather than the next one over.
-    const url = String((fetchImpl.mock.calls[0] as unknown as [string])[0]);
+    const url = (fetchImpl.mock.calls as unknown as [string][])
+      .map((c) => String(c[0]))
+      .find((u) => u.includes("nominatim"))!;
     expect(url).toContain("lat=18.520");
     expect(url).toContain("zoom=16");
     const failing = vi.fn(async () => {
@@ -112,6 +115,46 @@ describe("place names", () => {
     expect(await reverseGeocode(1.11, 2.22, failing as typeof fetch)).toBeNull();
     const notOk = vi.fn(async () => new Response("", { status: 503 }));
     expect(await reverseGeocode(3.33, 4.44, notOk as typeof fetch)).toBeNull();
+  });
+
+  it("trusts the nearest mapped settlement over an oversized village boundary (Bihta, not Bikram)", async () => {
+    const fetchImpl = vi.fn(async (url: string | URL | Request) =>
+      String(url).includes("overpass")
+        ? new Response(
+            JSON.stringify({
+              elements: [
+                { lat: 25.523, lon: 84.871, tags: { name: "Shahwajpur" } },
+                { lat: 25.56, lon: 84.87, tags: { name: "बिहटा", "name:en": "Bihta" } },
+                { lat: 25.55, lon: 84.87 },
+              ],
+            }),
+          )
+        : new Response(
+            JSON.stringify({
+              address: {
+                road: "Bihta- Kanpa road",
+                village: "Bikram",
+                county: "Bihta",
+                state_district: "Patna",
+                state: "Bihar",
+                country: "India",
+              },
+            }),
+          ),
+    );
+    expect(await reverseGeocode(25.546, 84.864, fetchImpl as typeof fetch)).toBe(
+      "Bihta, Patna, Bihar, India",
+    );
+    // Without a nearby settlement the address is used as before, with the block kept for context.
+    expect(
+      formatPlace({
+        address: { village: "Bikram", county: "Bihta", state_district: "Patna", state: "Bihar" },
+      }),
+    ).toBe("Bikram, Bihta, Patna, Bihar");
+    expect(
+      await nearestSettlement(1, 1, (async () => new Response("", { status: 504 })) as typeof fetch),
+    ).toBeNull();
+    expect(await nearestSettlement(1, 1, (async () => new Response("{}")) as typeof fetch)).toBeNull();
   });
 
   it("names shared GPS locations in the air snapshot", async () => {
