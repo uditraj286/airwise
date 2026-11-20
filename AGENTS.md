@@ -252,8 +252,7 @@ firestore.rules firestore.indexes.json firebase.json Dockerfile
   - **Better location search**: combobox with type-ahead, keyboard choice, recent places and popular cities. Same-named villages are ranked by distance from the family and labelled with their block ("Raghopur, Bihta, Patna"). OpenStreetMap lacks many Indian villages and its block lines can name the next town (Raghopur in Bihta reads as Bikram), so the detected name has a **Rename** button that changes only the label.
 
 **Open / ideas**
-- Push the repo to a public GitHub repo for submission (not done yet; keep `.env.local` out of git).
-- Deploy to Cloud Run (`Dockerfile` ready) and add the deployed domain to Firebase authorised domains.
+- Live: code at https://github.com/uditraj286/airwise, app at https://airwise-two.vercel.app (Vercel deploys every push to `main`; env vars are set in the Vercel project, never in git). Add `airwise-two.vercel.app` to Firebase authorised domains for Google sign-in. `Dockerfile` is ready for Cloud Run as an alternative.
 - Rotate the Gemini key after the hackathon.
 - Hindi (`src/i18n/dict.ts`) has not had the plain-language rewrite yet; some component text is still English-only.
 - Station data comes from a public relay of the CPCB feed (`api.dharun.dev`). For production, switch to the official data.gov.in API (free key) or OpenAQ.
