@@ -108,7 +108,7 @@ describe("place names", () => {
       .map((c) => String(c[0]))
       .find((u) => u.includes("nominatim"))!;
     expect(url).toContain("lat=18.520");
-    expect(url).toContain("zoom=16");
+    expect(url).toContain("zoom=15");
     const failing = vi.fn(async () => {
       throw new Error("offline");
     });

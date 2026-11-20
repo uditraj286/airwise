@@ -62,7 +62,7 @@ export async function nearestSettlement(
   lon: number,
   fetchImpl: typeof fetch = fetch,
 ): Promise<string | null> {
-  const query = `[out:json][timeout:5];node(around:3000,${lat.toFixed(3)},${lon.toFixed(3)})[place~"^(city|town|village|suburb|hamlet)$"][name];out;`;
+  const query = `[out:json][timeout:3];node(around:3000,${lat.toFixed(3)},${lon.toFixed(3)})[place~"^(city|town|village|suburb|hamlet)$"][name];out;`;
   try {
     const res = await fetchImpl("https://overpass-api.de/api/interpreter", {
       method: "POST",
@@ -71,7 +71,8 @@ export async function nearestSettlement(
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({ data: query }),
-      signal: AbortSignal.timeout(5000),
+      // Best-effort: a slow Overpass never holds up the place name for long.
+      signal: AbortSignal.timeout(2500),
     });
     if (!res.ok) return null;
     const parsed = OverpassPlaces.safeParse(await res.json());
@@ -93,6 +94,9 @@ export async function nearestSettlement(
 const cache = new TtlCache<string | null>(24 * 3600_000, 500);
 
 /**
+ * Zoom 15 asks Nominatim for the settlement itself; zoom 16+ returns the nearest road, whose address can carry
+ * a far-away village (a road near Bihta is addressed "Bikram").
+ *
  * Reverse-geocode coordinates rounded to three decimals (~110 m, enough to name the right village or
  * neighbourhood without pinpointing a home) with OpenStreetMap: Nominatim for the address and Overpass for the
  * nearest settlement, in parallel (both free, no key). Results are cached for a day per cell, which keeps us
@@ -103,7 +107,7 @@ export async function reverseGeocode(
   lon: number,
   fetchImpl: typeof fetch = fetch,
 ): Promise<string | null> {
-  const key = `v4:${lat.toFixed(3)},${lon.toFixed(3)}`;
+  const key = `v5:${lat.toFixed(3)},${lon.toFixed(3)}`;
   const hit = cache.get(key);
   if (hit !== undefined) return hit;
   try {
@@ -111,7 +115,7 @@ export async function reverseGeocode(
       format: "jsonv2",
       lat: lat.toFixed(3),
       lon: lon.toFixed(3),
-      zoom: "16",
+      zoom: "15",
       "accept-language": "en",
     });
     const [res, nearest] = await Promise.all([
