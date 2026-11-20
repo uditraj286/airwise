@@ -50,7 +50,14 @@ export const AirQuerySchema = z.object({
   tzOffsetMin: z.coerce.number().int().min(-840).max(840).default(0),
 });
 
-export const GeocodeQuerySchema = z.object({ q: z.string().trim().min(2).max(60) });
+export const GeocodeQuerySchema = z.object({
+  q: z.string().trim().min(2).max(60),
+  /** Optional "lat,lon" (rounded) so same-named villages closest to the family come first. */
+  near: z
+    .string()
+    .regex(/^-?\d{1,2}(\.\d{1,2})?,-?\d{1,3}(\.\d{1,2})?$/)
+    .optional(),
+});
 export const ReverseGeocodeQuerySchema = z.object({
   lat: z.coerce.number().min(-90).max(90),
   lon: z.coerce.number().min(-180).max(180),

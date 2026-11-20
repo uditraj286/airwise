@@ -120,4 +120,25 @@ describe("location search", () => {
     expect(placesStore.read()[0]?.name).toBe("Lucknow, Uttar Pradesh, India");
     expect(screen.getByRole("status")).toHaveTextContent("Location set to Lucknow");
   });
+
+  it("searches nearest-first and lets the family rename a detected place without moving it", async () => {
+    const onChange = vi.fn();
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify([])));
+    vi.stubGlobal("fetch", fetchMock);
+    const here = { name: "Bikram, Patna, Bihar, India", lat: 25.546, lon: 84.864 };
+    render(<LocationPicker value={here} onChange={onChange} />);
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "Raghopur" } });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(String((fetchMock.mock.calls[0] as unknown as [string])[0])).toContain("near=25.55,84.86");
+
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    const field = screen.getByLabelText("Place name");
+    fireEvent.change(field, { target: { value: "x" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save name" }));
+    expect(screen.getByRole("status")).toHaveTextContent("at least 2 letters");
+    fireEvent.change(field, { target: { value: "Raghopur, Bihta" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save name" }));
+    expect(onChange).toHaveBeenCalledWith({ name: "Raghopur, Bihta", lat: 25.546, lon: 84.864 });
+    expect(screen.getByRole("status")).toHaveTextContent("Place renamed to Raghopur, Bihta");
+  });
 });

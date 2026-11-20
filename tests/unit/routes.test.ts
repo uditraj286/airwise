@@ -96,6 +96,38 @@ describe("GET /api/geocode", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("lists the same-named village nearest the family first, with its block", async () => {
+    const village = (admin3: string, latitude: number, longitude: number) => ({
+      name: "Raghopur",
+      latitude,
+      longitude,
+      admin1: "Bihar",
+      admin2: "Patna district",
+      admin3,
+      country: "India",
+    });
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          results: [
+            village("Revelganj", 25.806, 84.634),
+            village("Bikram", 25.462, 84.83),
+            village("Bihta", 25.546, 84.864),
+          ],
+        }),
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await geoGet(new NextRequest("http://localhost/api/geocode?q=Raghopur&near=25.56,84.87"));
+    const places = (await res.json()) as { name: string }[];
+    expect(places[0]?.name).toBe("Raghopur, Bihta, Patna, Bihar, India");
+    expect(places.map((p) => p.name)[2]).toContain("Revelganj");
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain("count=50");
+    expect((await geoGet(new NextRequest("http://localhost/api/geocode?q=Raghopur&near=bad"))).status).toBe(
+      400,
+    );
+  });
+
   it("returns 502 when the geocoder fails and 400 for short queries", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("x", { status: 500 })));

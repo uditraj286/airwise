@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Crosshair, Loader2, MapPin, Search, X } from "lucide-react";
+import { Check, Clock, Crosshair, Loader2, MapPin, Pencil, Search, X } from "lucide-react";
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { POPULAR_CITIES, rememberPlace, usePlaces, type Place } from "@/lib/places";
 import type { Profile } from "@/lib/profile/schema";
@@ -36,6 +36,7 @@ export function LocationPicker({
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const [status, setStatus] = useState("");
+  const [renaming, setRenaming] = useState<string | null>(null);
   const recent = usePlaces();
   const id = useId();
   const listId = `${id}-list`;
@@ -55,7 +56,9 @@ export function LocationPicker({
     const ctrl = new AbortController();
     const timer = setTimeout(() => {
       setSearching(true);
-      fetch(`/api/geocode?q=${encodeURIComponent(query.trim())}`, { signal: ctrl.signal })
+      // Rounded current position (about 1 km) so same-named villages nearest the family are listed first.
+      const near = value ? `&near=${value.lat.toFixed(2)},${value.lon.toFixed(2)}` : "";
+      fetch(`/api/geocode?q=${encodeURIComponent(query.trim())}${near}`, { signal: ctrl.signal })
         .then((r) => {
           if (!r.ok) throw new Error("City search is unavailable.");
           return r.json();
@@ -81,7 +84,7 @@ export function LocationPicker({
       clearTimeout(timer);
       ctrl.abort();
     };
-  }, [query, typed]);
+  }, [query, typed, value]);
 
   const choose = (p: Place): void => {
     selection.current += 1;
@@ -120,7 +123,7 @@ export function LocationPicker({
         const place = { name: name.slice(0, 80), lat, lon };
         onChange(place);
         rememberPlace(place);
-        setStatus(`Location set to ${name}.`);
+        setStatus(`Location set to ${name}. Not the right name? Choose Rename.`);
       },
       () => {
         if (selection.current === request)
@@ -162,13 +165,68 @@ export function LocationPicker({
 
   return (
     <div>
-      {value && (
-        <p className="flex items-center gap-2 text-[15px]">
+      {value && renaming === null && (
+        <p className="flex flex-wrap items-center gap-2 text-[15px]">
           <MapPin className="h-4 w-4 text-brand" aria-hidden="true" />
-          <span>
+          <span className="min-w-0">
             Current location: <strong className="font-semibold">{value.name}</strong>
           </span>
+          <button
+            type="button"
+            onClick={() => setRenaming(value.name)}
+            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-caption font-medium text-brand hover:bg-brand/10"
+          >
+            <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+            Rename
+          </button>
         </p>
+      )}
+      {value && renaming !== null && (
+        <form
+          className="flex flex-col gap-2 sm:flex-row sm:items-center"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const name = renaming.trim().slice(0, 80);
+            if (name.length < 2) return setStatus("Enter at least 2 letters for the place name.");
+            // Same coordinates, so air readings don't change: only the label the family sees.
+            const place = { ...value, name };
+            onChange(place);
+            rememberPlace(place);
+            setRenaming(null);
+            setStatus(`Place renamed to ${name}. Air readings still use your exact position.`);
+          }}
+        >
+          <label htmlFor={`${id}-rename`} className="text-label font-medium">
+            Place name
+          </label>
+          <input
+            id={`${id}-rename`}
+            type="text"
+            value={renaming}
+            maxLength={80}
+            autoFocus
+            onChange={(e) => setRenaming(e.target.value)}
+            onKeyDown={(e) => e.key === "Escape" && setRenaming(null)}
+            placeholder="e.g. Raghopur, Bihta"
+            className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-3.5 py-2 text-[15px] focus:border-brand focus:outline-none"
+          />
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-label font-medium text-onbrand hover:bg-brand-strong"
+            >
+              <Check className="h-4 w-4" aria-hidden="true" />
+              Save name
+            </button>
+            <button
+              type="button"
+              onClick={() => setRenaming(null)}
+              className="rounded-full px-3 py-2 text-label text-muted hover:bg-subtle"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
       )}
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1">

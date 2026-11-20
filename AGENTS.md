@@ -88,7 +88,7 @@ src/
     api/air/route.ts        GET  live AirSnapshot for lat/lon (rate-limited, cached)
     api/plan/route.ts       POST daily plan (Gemini wording + engine numbers)
     api/chat/route.ts       POST streaming chat (plain text)
-    api/geocode/route.ts    GET  ?q= city search | ?lat=&lon= reverse lookup
+    api/geocode/route.ts    GET  ?q=[&near=lat,lon] search (nearest first, block + district in labels) | ?lat=&lon= reverse lookup
     api/stations/route.ts   GET  live CPCB stations within 50 km (India; sample list in mock mode)
     api/air/batch/route.ts  GET  ?points=lat,lon;… current AQI for up to 5 saved places in one request
     globals.css             design tokens, keyframes, reduced-motion rule
@@ -96,7 +96,7 @@ src/
     Dashboard.tsx           page composition for / (reference "Donezo" layout)
     HealthView.tsx          /health: emergency numbers, when to get help, activity advisor, N95 guide
     ShareButton.tsx         share today's summary (native share → copy → WhatsApp link)
-    LocationPicker.tsx      accessible combobox: type-ahead results, arrow keys + Enter, recent places, popular cities, GPS
+    LocationPicker.tsx      accessible combobox: type-ahead results (nearest first), arrow keys + Enter, recent places, popular cities, GPS, Rename (fix the label, keep the coordinates)
     OutingPlanner.tsx       "Plan an outing": cleanest 1/2/3-hour daylight window (Health page)
     ReportPollution.tsx     ready-to-send complaint for burning, dust, smoky vehicles, factory smoke (Health page)
     AlertsSettings.tsx      smog-alert toggle in Settings
@@ -249,7 +249,7 @@ firestore.rules firestore.indexes.json firebase.json Dockerfile
   - **Stations near you**: every live CPCB monitor within 50 km with AQI, distance and time, refreshed every minute.
   - **Plan an outing**: cleanest 1, 2 or 3-hour daylight window in the next 24 hours (`bestOuting` in `lib/air/activities.ts`).
   - **Report pollution**: ready-to-send complaint text for burning, construction dust, smoky vehicles and factory smoke, with official channels (CPCB Sameer app, State PCB, Green Delhi).
-  - **Better location search**: combobox with type-ahead, keyboard choice, recent places and popular cities.
+  - **Better location search**: combobox with type-ahead, keyboard choice, recent places and popular cities. Same-named villages are ranked by distance from the family and labelled with their block ("Raghopur, Bihta, Patna"). OpenStreetMap lacks many Indian villages and its block lines can name the next town (Raghopur in Bihta reads as Bikram), so the detected name has a **Rename** button that changes only the label.
 
 **Open / ideas**
 - Push the repo to a public GitHub repo for submission (not done yet; keep `.env.local` out of git).
